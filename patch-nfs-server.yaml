@@ -6,6 +6,7 @@ spec:
   template:
     spec:
       containers:
+      - name: nfs-client-provisioner
         env:
         - name: NFS_SERVER
           value: 1.1.1.1
