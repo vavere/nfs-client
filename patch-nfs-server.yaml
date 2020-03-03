@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-client
+spec:
+  template:
+    spec:
+      containers:
+        env:
+        - name: NFS_SERVER
+          value: 1.1.1.1
+        - name: NFS_PATH
+          value: /XXX
+      volumes:
+      - name: nfs-client-root
+        nfs:
+          server: 1.1.1.1
+          path: /XXX    

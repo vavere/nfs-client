@@ -11,3 +11,6 @@ commonLabels:
 
 resources:
 - ns.yaml
+
+patchesStrategicMerge: 
+- patch-nfs-server.yaml
