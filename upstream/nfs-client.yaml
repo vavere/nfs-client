@@ -1,0 +1,150 @@
+---
+# Source: nfs-client-provisioner/templates/storageclass.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: nfs-client
+provisioner: cluster.local/nfs-client
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+parameters:
+  archiveOnDelete: "true"
+---
+# Source: nfs-client-provisioner/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: nfs-client
+---
+# Source: nfs-client-provisioner/templates/clusterrole.yaml
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: nfs-client-runner
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "update", "patch"]
+---
+# Source: nfs-client-provisioner/templates/clusterrolebinding.yaml
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: run-nfs-client
+subjects:
+  - kind: ServiceAccount
+    name: nfs-client
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: nfs-client-runner
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: nfs-client-provisioner/templates/role.yaml
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: leader-locking-nfs-client
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+# Source: nfs-client-provisioner/templates/rolebinding.yaml
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+  name: leader-locking-nfs-client
+subjects:
+  - kind: ServiceAccount
+    name: nfs-client
+    namespace: default
+roleRef:
+  kind: Role
+  name: leader-locking-nfs-client
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: nfs-client-provisioner/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-client
+  labels:
+    app: nfs-client-provisioner
+    chart: nfs-client-provisioner-1.2.8
+    heritage: Helm
+    release: demo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+      release: demo
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: nfs-client-provisioner
+        release: demo
+    spec:
+      serviceAccountName: nfs-client
+      containers:
+        - name: nfs-client-provisioner
+          image: "quay.io/external_storage/nfs-client-provisioner:v3.1.0-k8s1.11"
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: nfs-client-root
+              mountPath: /persistentvolumes
+          env:
+            - name: PROVISIONER_NAME
+              value: cluster.local/nfs-client
+            - name: NFS_SERVER
+              value: 192.168.1.9
+            - name: NFS_PATH
+              value: /data
+      volumes:
+        - name: nfs-client-root
+          nfs:
+            server: 192.168.1.9
+            path: /data

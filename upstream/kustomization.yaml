@@ -1,0 +1,50 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# helm template demo stable/nfs-client-provisioner -f values.yaml >nfs-client.yaml
+resources:
+- nfs-client.yaml
+
+patchesJson6902:
+- target:
+    version: v1
+    group: storage.k8s.io
+    kind: StorageClass
+    name: nfs-client
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    kind: ServiceAccount
+    name: nfs-client
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    group: rbac.authorization.k8s.io
+    kind: Role
+    name: leader-locking-nfs-client
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    group: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: nfs-client-runner
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    group: rbac.authorization.k8s.io
+    kind: RoleBinding
+    name: leader-locking-nfs-client
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    group: rbac.authorization.k8s.io
+    kind: ClusterRoleBinding
+    name: run-nfs-client
+  path: patch-remove-labels.yaml
+- target:
+    version: v1
+    group: apps
+    kind: Deployment
+    name: nfs-client
+  path: patch-remove-labels.yaml
+
